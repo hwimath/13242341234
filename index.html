@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>휘매쓰 연산 챌린지!</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        margin: 0;
+        padding: 0;
+    }
+    #container {
+        width: 80%;
+        margin: 20px auto;
+        background: #fff;
+        padding: 20px;
+        box-shadow: 0px 0px 10px #ccc;
+    }
+    h1 {
+        text-align: center;
+    }
+    .difficulty-selection {
+        text-align: center;
+        margin: 20px 0;
+    }
+    .btn {
+        padding: 10px 20px;
+        margin: 0 10px;
+        background: #007BFF;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .btn:hover {
+        background: #0056b3;
+    }
+    #game-area {
+        display: none;
+    }
+    #problem {
+        font-size: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .choices {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .choice-btn {
+        width: 45%;
+        margin: 10px;
+        background: #e7e7e7;
+        text-align: center;
+        padding: 10px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        font-size: 18px;
+    }
+    .choice-btn:hover {
+        background: #ddd;
+    }
+    #score, #lives, #global-timer {
+        margin: 10px 0;
+        font-size: 18px;
+        text-align: center;
+    }
+    #energy-bar-container {
+        width: 80%;
+        margin: 0 auto;
+        height: 20px;
+        background: #ccc;
+        border: 1px solid #999;
+        position: relative;
+        margin-bottom: 20px;
+    }
+    #energy-bar {
+        width: 100%;
+        height: 20px;
+        background: #76c043;
+        transition: width 0.5s linear;
+    }
+    #popup {
+        display: none;
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff;
+        border: 2px solid #333;
+        padding: 20px;
+        z-index: 9999;
+        width: 50%;
+        max-height: 50%;
+        overflow:auto;
+    }
+    #popup h2 {
+        margin-top: 0;
+    }
+    #popup .close-btn {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 5px 10px;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+        text-align: center;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+</head>
+<body>
+<div id="container">
+    <h1>휘매쓰 연산 챌린지!</h1>
+    <div id="difficulty-selection" class="difficulty-selection">
+        <p>난이도를 선택하세요:</p>
+        <button class="btn" onclick="selectDifficulty('최상')">최상 (20초, 문제당 20점)</button>
+        <button class="btn" onclick="selectDifficulty('상')">상 (30초, 15점)</button>
+        <button class="btn" onclick="selectDifficulty('중')">중 (40초, 13점)</button>
+        <button class="btn" onclick="selectDifficulty('하')">하 (시간 무제한, 10점)</button>
+    </div>
+    <div id="game-area">
+        <div id="global-timer">전체 진행 시간: 0분 0초</div>
+        <div id="score">점수: 0</div>
+        <div id="lives">남은 기회: 3</div>
+        <div id="energy-bar-container">
+            <div id="energy-bar"></div>
+        </div>
+        <div id="problem"></div>
+        <div class="choices">
+            <div class="choice-btn" onclick="chooseAnswer(event)"></div>
+            <div class="choice-btn" onclick="chooseAnswer(event)"></div>
+            <div class="choice-btn" onclick="chooseAnswer(event)"></div>
+            <div class="choice-btn" onclick="chooseAnswer(event)"></div>
+        </div>
+    </div>
+</div>
+<div id="popup"></div>
+
+<script>
+var questions = [
+  {
+    number: 1,
+    problem: "-\\dfrac{1}{3} \\times \\left( -1 + \\dfrac{5}{2} \\times \\left( -\\dfrac{3}{5} \\right)^2 \\right) \\times 2",
+    answer: "1/15",
+    solution: "풀이: \\((-\\frac{1}{3}) * (-1 + \\frac{5}{2}*(\\frac{9}{25})) * 2 = (-\\frac{1}{3}) * (-1+\\frac{9}{10}) *2=(-\\frac{1}{3}) * (-\\frac{1}{10}) *2=\\frac{1}{30}*2=\\frac{1}{15}\\)."
+  },
+  {
+    number: 2,
+    problem: "2 - (-3) \\times \\left[ \\{(+4) - (-1)\\} \\div 5 \\right]",
+    answer: "5",
+    solution: "4 -(-1)=5, 5\\div5=1, -3*1=-3, 2 -(-3)=5."
+  },
+  {
+    number: 3,
+    problem: "(-3) \\times \\{ (+8) \\div (-3)^2 + (-2) \\} - 7",
+    answer: "-11/3",
+    solution: "(−3)^2=9, 8÷9=8/9, 8/9−2=8/9−18/9=−10/9, (−3)*(−10/9)=30/9=10/3, 10/3−7=10/3−21/3=−11/3."
+  },
+  {
+    number: 4,
+    problem: "-3 \\div \\{ 2 + 9 \\div (-2)^4 \\} + 7",
+    answer: "239/41",
+    solution: "(-2)^4=16, 9÷16=9/16, 2+9/16=41/16, -3÷(41/16)=-3*(16/41)= -48/41, -48/41+7=(-48/41)+(287/41)=239/41."
+  },
+  {
+    number: 5,
+    problem: "(+12) - [27 \\div \\{(-3)^2 + (+10)\\}] + (-2)",
+    answer: "163/19",
+    solution: "(-3)^2=9, 9+10=19, 27÷19=27/19, 12-(27/19)= (228/19-27/19)=201/19, 201/19-2=201/19-38/19=163/19."
+  },
+  {
+    number: 6,
+    problem: "(-6) - \\dfrac{1}{4} \\div \\{ (7 - \\dfrac{2}{3}) \\times \\dfrac{5}{9} \\}",
+    answer: "-2307/380",
+    solution: "7-2/3=19/3, (19/3)*(5/9)=95/27, (1/4)÷(95/27)=1/4*(27/95)=27/380, -6-(27/380)=(-2280/380)-27/380=-2307/380."
+  },
+  {
+    number: 7,
+    problem: "15 + \\dfrac{1}{4} \\div \\{(-\\dfrac{2}{3} + \\dfrac{1}{5}) \\times \\dfrac{1}{2}\\}",
+    answer: "195/14",
+    solution: "(-2/3+1/5)=(-10/15+3/15)= -7/15, (-7/15)*(1/2)=-7/30, (1/4)÷(-7/30)=1/4*(-30/7)= -30/28=-15/14, 15+(-15/14)=(210/14-15/14)=195/14."
+  },
+  {
+    number: 8,
+    problem: "25 + \\dfrac{4}{3} \\times [(-\\dfrac{5}{9}-\\dfrac{7}{8}) \\div \\dfrac{15}{4}]",
+    answer: "9919/405",
+    solution: "(-5/9-7/8)=(-40/72-63/72)=-103/72, ÷(15/4)= -103/72 *4/15= -412/1080= -103/270, (4/3)*(-103/270)= -412/810= -206/405, 25+(-206/405)=(25*405/405-206/405)= (10125/405-206/405)=9919/405."
+  },
+  {
+    number: 9,
+    problem: "-\\dfrac{1}{3} \\times ( -1 + \\dfrac{5}{2} \\times ( -\\dfrac{3}{5} )^2 ) \\times 2",
+    answer: "1/15",
+    solution: "문제1과 동일"
+  },
+  {
+    number: 10,
+    problem: "3 - \\{ \\dfrac{4}{7} \\div (5 - \\dfrac{3}{7}) - 2 \\} \\times \\dfrac{2}{3}",
+    answer: "17/4",
+    solution: "5-3/7=32/7, (4/7)÷(32/7)=4/7*(7/32)=1/8, 1/8-2=-15/8, (-15/8)*(2/3)=-30/24=-5/4, 3-(-5/4)=3+5/4= (12/4+5/4)=17/4."
+  },
+  {
+    number: 18,
+    problem: "(-3) - (+6) ÷ (-2)",
+    answer: "0",
+    solution: "6÷(-2)=-3, -3-(-3)=0."
+  },
+  {
+    number: 19,
+    problem: "\\dfrac{3}{4} - \\left( \\dfrac{3}{2} \\right)^3 ÷ \\dfrac{9}{4}",
+    answer: "-3/4",
+    solution: "(3/2)^3=27/8, 27/8÷(9/4)=27/8*(4/9)=3/2, 3/4-3/2=3/4-6/4=-3/4."
+  },
+  {
+    number: 20,
+    problem: "5 X (-1)^{202} ÷ (4 - \\dfrac{1}{4})",
+    answer: "4/3",
+    solution: "(-1)^{202}=1, 4-1/4=15/4, 5÷(15/4)=5*(4/15)=20/15=4/3."
+  },
+  {
+    number: 21,
+    problem: "-4 X (1-4) ÷ (-\\dfrac{2}{3})",
+    answer: "-18",
+    solution: "1-4=-3, -4*(-3)=12, 12÷(-2/3)=12*(-3/2)=-18."
+  },
+  {
+    number: 22,
+    problem: "\\dfrac{2}{3} - \\left(-\\dfrac{5}{3}\\right) ÷ \\dfrac{5}{2}",
+    answer: "4/3",
+    solution: "(-5/3)÷(5/2)=(-5/3)*(2/5)=-2/3, 2/3 -(-2/3)=4/3."
+  },
+  {
+    number: 23,
+    problem: "\\dfrac{2}{3} + \\left(-\\dfrac{1}{3}\\right)^2 X \\dfrac{3}{4}",
+    answer: "3/4",
+    solution: "(-1/3)^2=1/9, (1/9)*(3/4)=1/12, 2/3+1/12=8/12+1/12=9/12=3/4."
+  },
+  {
+    number: 24,
+    problem: "(-3)^2 - 18 ÷ (-\\dfrac{3}{2})^2",
+    answer: "1",
+    solution: "(-3)^2=9, (-3/2)^2=9/4, 18÷(9/4)=18*(4/9)=8, 9-8=1."
+  },
+  {
+    number: 25,
+    problem: "10 - 20 ÷ 4 + 3 X 2",
+    answer: "11",
+    solution: "20÷4=5, 10-5=5, 3*2=6, 5+6=11."
+  },
+  {
+    number: 26,
+    problem: "6 X \\{12 - (5+1)\\}",
+    answer: "36",
+    solution: "5+1=6, 12-6=6, 6*6=36."
+  },
+  {
+    number: 27,
+    problem: "24 ÷ \\{(7-4) X 2\\}",
+    answer: "4",
+    solution: "7-4=3,3*2=6,24÷6=4."
+  },
+  {
+    number: 28,
+    problem: "2 - 2 X \\{6 ÷ (-4+7)\\}",
+    answer: "-2",
+    solution: "-4+7=3, 6÷3=2, 2*2=4, 2-4=-2."
+  },
+  {
+    number: 29,
+    problem: "6 + \\{4 X (15 ÷ 5) - 7\\} - 2",
+    answer: "9",
+    solution: "15÷5=3,4*3=12,12-7=5,6+5=11,11-2=9."
+  },
+  {
+    number: 30,
+    problem: "4 X 6 - 12 + 15 ÷ 5",
+    answer: "15",
+    solution: "4*6=24,15÷5=3,24-12=12,12+3=15."
+  },
+  {
+    number: 31,
+    problem: "4^2 + 3 X (-12) ÷ 6 - 5",
+    answer: "5",
+    solution: "4^2=16,3*(-12)=-36,-36÷6=-6,16-6=10,10-5=5."
+  },
+  {
+    number: 32,
+    problem: "18 ÷ (-3)^2 X 6 + 15 - 9",
+    answer: "18",
+    solution: "(-3)^2=9,18÷9=2,2*6=12,12+15=27,27-9=18."
+  },
+  {
+    number: 33,
+    problem: "13 - 6 X \\left( 1 + \\left( \\dfrac{1}{2}-\\dfrac{2}{3}\\right) \\right)",
+    answer: "8",
+    solution: "(1/2-2/3)=-1/6,1+(-1/6)=5/6,6*(5/6)=5,13-5=8."
+  },
+  {
+    number: 34,
+    problem: "\\dfrac{4}{5} X \\left( \\left(+\\dfrac{3}{4}\\right)-(-3)\\right) - \\dfrac{5}{2}",
+    answer: "1/2",
+    solution: "3/4+3=15/4,(4/5)*(15/4)=3,3-5/2=1/2."
+  },
+  {
+    number: 35,
+    problem: "-2 - \\{1-(14-5)\\}",
+    answer: "6",
+    solution: "14-5=9,1-9=-8,-2-(-8)=6."
+  },
+  {
+    number: 36,
+    problem: "-11 - [ -2 + \\{5-(2+3)\\} ]",
+    answer: "-9",
+    solution: "2+3=5,5-5=0,-2+0=-2,-11-(-2)=-9."
+  },
+  {
+    number: 37,
+    problem: "-\\dfrac{1}{5} + ( 1-(\\dfrac{3}{5}-\\dfrac{2}{5}))",
+    answer: "3/5",
+    solution: "3/5-2/5=1/5,1-(1/5)=4/5,-1/5+4/5=3/5."
+  },
+  {
+    number: 38,
+    problem: "-\\dfrac{2}{3}-\\{-\\dfrac{1}{6}+( -\\dfrac{1}{3}+\\dfrac{2}{3})\\}",
+    answer: "-5/6",
+    solution: "-1/3+2/3=1/3,-1/6+1/3=1/6,-2/3-1/6=-4/6-1/6=-5/6."
+  },
+  {
+    number: 39,
+    problem: "36 ÷ 9 + \\{2+(-4)X3\\}",
+    answer: "-6",
+    solution: "36÷9=4,(-4)*3=-12,2+(-12)=-10,4+(-10)=-6."
+  },
+  {
+    number: 40,
+    problem: "7 - 3 X (2 + \\dfrac{4}{2}) ÷ 5",
+    answer: "23/5",
+    solution: "4/2=2,2+2=4,3*4=12,12÷5=12/5,7-12/5=35/5-12/5=23/5."
+  },
+  {
+    number: 41,
+    problem: "\\dfrac{5}{6} + (-\\dfrac{2}{3}) X \\dfrac{9}{4}",
+    answer: "-2/3",
+    solution: "(-2/3)*(9/4)=-18/12=-3/2,5/6-3/2=5/6-9/6=-4/6=-2/3."
+  },
+  {
+    number: 42,
+    problem: "(-2)^3 + 4 X (\\dfrac{1}{2})^2 - 5",
+    answer: "-12",
+    solution: "(-2)^3=-8,(1/2)^2=1/4,4*(1/4)=1,-8+1= -7,-7-5=-12."
+  },
+  {
+    number: 43,
+    problem: "\\dfrac{7}{8} ÷ (\\dfrac{3}{4}-\\dfrac{1}{2}) + 2",
+    answer: "11/2",
+    solution: "3/4-1/2=1/4,7/8 ÷1/4=7/8*4=28/8=3.5,3.5+2=5.5=11/2."
+  },
+  {
+    number: 44,
+    problem: "-5 + 3 X (4 - 2^2) ÷ 2",
+    answer: "-5",
+    solution: "2^2=4,4-4=0,3*0=0,0÷2=0,-5+0=-5."
+  },
+  {
+    number: 45,
+    problem: "(\\dfrac{2}{5})^2 X 10 - \\dfrac{3}{4}",
+    answer: "17/20",
+    solution: "(2/5)^2=4/25,4/25*10=40/25=8/5=1.6,1.6-3/4=1.6-0.75=0.85=17/20."
+  },
+  {
+    number: 46,
+    problem: "12 ÷ (3 - \\dfrac{5}{2}) + 4 X (-2)",
+    answer: "16",
+    solution: "3-5/2=6/2-5/2=1/2,12÷1/2=24,4*(-2)=-8,24-8=16."
+  },
+  {
+    number: 47,
+    problem: "\\dfrac{3}{5} X (10-4) + \\dfrac{2}{3}",
+    answer: "64/15",
+    solution: "10-4=6,3/5*6=18/5=3.6,3.6+2/3= (18/5)+(2/3)=(54/15)+(10/15)=64/15."
+  },
+  {
+    number: 48,
+    problem: "-\\dfrac{4}{7} + 2 X (\\dfrac{3}{4})^2",
+    answer: "31/56",
+    solution: "(3/4)^2=9/16,2*(9/16)=18/16=9/8, -4/7+9/8=(-32/56+63/56)=31/56."
+  },
+  {
+    number: 49,
+    problem: "( -\\dfrac{3}{4} ) X (2+\\dfrac{1}{2}) - \\dfrac{5}{3}",
+    answer: "-85/24",
+    solution: "2+1/2=5/2,(-3/4)*(5/2)=-15/8=-1.875,-1.875-(5/3)=(-15/8)-(5/3)=(-45/24-40/24)=-85/24."
+  },
+  {
+    number: 50,
+    problem: "\\dfrac{6}{7} ÷ (\\dfrac{2}{3}-\\dfrac{1}{6}) + 3",
+    answer: "33/7",
+    solution: "2/3-1/6=1/2,(6/7)÷(1/2)=6/7*2=12/7,12/7+3=12/7+21/7=33/7."
+  },
+  {
+    number: 51,
+    problem: "4 X (\\dfrac{3}{5}+2) - \\dfrac{7}{2}",
+    answer: "69/10",
+    solution: "3/5+2=13/5=2.6,4*2.6=10.4=52/5,52/5-(7/2)=104/10-35/10=69/10."
+  },
+  {
+    number: 52,
+    problem: "(\\dfrac{5}{6})^2 + 3 X ( -\\dfrac{2}{3} ) -1",
+    answer: "-83/36",
+    solution: "(5/6)^2=25/36,3*(-2/3)=-2,25/36-2=25/36-(72/36)=-47/36,-47/36-1=-47/36-36/36=-83/36."
+  },
+  {
+    number: 53,
+    problem: "10 - \\dfrac{4}{5} X (3+\\dfrac{2}{3})",
+    answer: "106/15",
+    solution: "3+2/3=11/3,4/5*(11/3)=44/15,10-(44/15)=150/15-44/15=106/15."
+  },
+  {
+    number: 54,
+    problem: "( -\\dfrac{1}{2} ) X (4-\\dfrac{3}{4}) + 2",
+    answer: "3/8",
+    solution: "4-(3/4)=16/4-3/4=13/4,(-1/2)*13/4=-13/8, -13/8+2=(-13/8)+(16/8)=3/8."
+  },
+  {
+    number: 55,
+    problem: "\\dfrac{8}{9} - (\\dfrac{2}{3})^3 + 1",
+    answer: "43/27",
+    solution: "(2/3)^3=8/27,8/9-8/27=24/27-8/27=16/27,16/27+1=16/27+27/27=43/27."
+  },
+  {
+    number: 56,
+    problem: "3 X ( -\\dfrac{4}{5} ) + \\dfrac{7}{10} ÷ \\dfrac{1}{2}",
+    answer: "-1",
+    solution: "3*(-4/5)=-12/5=-2.4,(7/10)÷(1/2)=7/10*2=14/10=1.4,-2.4+1.4=-1."
+  },
+  {
+    number: 57,
+    problem: "\\dfrac{9}{4}-2 X (\\dfrac{5}{6}) + \\dfrac{3}{2}",
+    answer: "25/12",
+    solution: "2*(5/6)=10/6=5/3,9/4=27/12,5/3=20/12,27/12-20/12=7/12,7/12+3/2=7/12+(18/12)=25/12."
+  },
+  {
+    number: 58,
+    problem: "(\\dfrac{3}{7}) X (-4+2) + \\dfrac{5}{8}",
+    answer: "-13/56",
+    solution: "-4+2=-2,(3/7)*(-2)=-6/7, -6/7+5/8=(-48/56+35/56)=-13/56."
+  },
+  {
+    number: 59,
+    problem: "5 - \\dfrac{3}{4} X (2+ \\dfrac{1}{3}) ÷ \\dfrac{5}{6}",
+    answer: "29/10",
+    solution: "2+1/3=7/3,(3/4)*(7/3)=21/12=7/4,7/4 ÷(5/6)=7/4*(6/5)=42/20=21/10,5-(21/10)=50/10-21/10=29/10."
+  },
+  {
+    number: 60,
+    problem: "\\dfrac{2}{3} X ( -\\dfrac{9}{4} ) + \\dfrac{7}{12}",
+    answer: "-11/12",
+    solution: "(2/3)*(-9/4)=-18/12=-3/2, -3/2+7/12=(-18/12+7/12)=-11/12."
+  },
+  {
+    number: 61,
+    problem: "(\\dfrac{5}{6}) ÷ (\\dfrac{2}{3}-\\dfrac{1}{6}) X 3",
+    answer: "5",
+    solution: "2/3-1/6=1/2,(5/6)÷(1/2)=5/6*2=10/6=5/3,5/3*3=5."
+  },
+  {
+    number: 62,
+    problem: "- (\\dfrac{7}{8}) + 4 X (\\dfrac{2}{5})^2",
+    answer: "-47/200",
+    solution: "(2/5)^2=4/25,4*(4/25)=16/25=0.64,-7/8=-0.875,-0.875+0.64=-0.235=-47/200."
+  },
+  {
+    number: 63,
+    problem: "\\dfrac{5}{9} + 2 X(-\\dfrac{3}{4}) - \\dfrac{1}{3}",
+    answer: "-23/18",
+    solution: "2*(-3/4)=-3/2,5/9-3/2=(10/18-27/18)=-17/18,-17/18-(1/3)= -17/18-(6/18)=-23/18."
+  },
+  {
+    number: 64,
+    problem: "( -\\dfrac{2}{5}) X (3+\\dfrac{1}{2}) + \\dfrac{4}{7}",
+    answer: "-29/35",
+    solution: "3+1/2=7/2,(-2/5)*7/2=-14/10=-7/5, -7/5+4/7=(-49/35+20/35)=-29/35."
+  },
+  {
+    number: 65,
+    problem: "\\dfrac{3}{4} ÷ (\\dfrac{2}{3}+\\dfrac{1}{6}) -1",
+    answer: "-1/10",
+    solution: "2/3+1/6=5/6,(3/4)÷(5/6)=3/4*(6/5)=18/20=9/10,9/10-1=-1/10."
+  },
+  {
+    number: 66,
+    problem: "4 X ( -\\dfrac{5}{6}) + \\dfrac{2}{3} ÷ \\dfrac{1}{4}",
+    answer: "-2/3",
+    solution: "4*(-5/6)=-20/6=-10/3,(2/3)÷(1/4)=2/3*4=8/3,-10/3+8/3=-2/3."
+  },
+  {
+    number: 67,
+    problem: "\\dfrac{7}{10} X (5 - \\dfrac{3}{2}) + \\dfrac{1}{5}",
+    answer: "53/20",
+    solution: "5-3/2=7/2,(7/10)*(7/2)=49/20=2.45,2.45+1/5=2.45+0.2=2.65=53/20."
+  },
+  {
+    number: 68,
+    problem: "\\left(\\dfrac{4}{9}\\right)^2 - \\dfrac{1}{3} X 2 + 1",
+    answer: "43/81",
+    solution: "(4/9)^2=16/81,(1/3)*2=2/3=54/81,16/81-54/81=-38/81,-38/81+1=(-38/81)+(81/81)=43/81."
+  },
+  {
+    number: 69,
+    problem: "-3 + \\dfrac{5}{6} X (4-\\dfrac{2}{3})",
+    answer: "-2/9",
+    solution: "4-2/3=10/3,(5/6)*(10/3)=50/18=25/9, -3+(25/9)=(-27/9+25/9)=-2/9."
+  },
+  {
+    number: 70,
+    problem: "( -\\dfrac{1}{4}) X (\\dfrac{3}{2}+2) - \\dfrac{2}{5}",
+    answer: "-51/40",
+    solution: "3/2+2=3/2+4/2=7/2,( -1/4)*7/2=-7/8=-0.875, -7/8-(2/5)=(-35/40)-(16/40)=-51/40."
+  }
+];
+
+var difficultySettings = {
+    "최상": {time:20, score:20},
+    "상": {time:30, score:15},
+    "중": {time:40, score:13},
+    "하": {time:Infinity, score:10}
+};
+
+var currentDifficulty = null;
+var currentTimeLimit = Infinity; 
+var currentScorePerProblem = 10;
+var currentIndex = 0;
+var score = 0;
+var lives = 3;
+var globalTime = 0; 
+var intervalGlobal = null;
+var intervalEnergy = null;
+var energyTimeLeft = 0;
+
+var usedQuestions = []; 
+var infiniteMode = false; 
+var currentQuestion = null;
+var currentCorrectAnswer = null;
+var solutionPopupOpen = false;
+
+function fractionToDecimal(frac) {
+    if(frac.includes('/')){
+        var parts = frac.split('/');
+        return parseFloat(parts[0])/parseFloat(parts[1]);
+    } else {
+        return parseFloat(frac);
+    }
+}
+function gcd(a,b){return b==0?Math.abs(a):gcd(b,a%b);}
+function decimalToFraction(dec) {
+    var sign = dec<0?-1:1;
+    dec=Math.abs(dec);
+    var best = {num:0,den:1,error:Infinity};
+    for(var den=1; den<=200; den++){
+        var num=Math.round(dec*den);
+        var err=Math.abs(dec - num/den);
+        if(err<best.error){
+            best={num:num,den:den,error:err};
+        }
+    }
+    var g=gcd(best.num,best.den);
+    best.num/=g;best.den/=g;
+    if(sign<0)best.num=-best.num;
+    if(best.den==1) return best.num.toString();
+    return best.num+"/"+best.den;
+}
+
+function generateChoices(answer) {
+    var choices = [answer];
+    while(choices.length<4) {
+        var val = fractionToDecimal(answer);
+        var diff = (Math.random()*5+1); 
+        var sign = Math.random()<0.5? -1:1;
+        var wrongDecimal = val+(diff*sign);
+        var wrongVal = decimalToFraction(wrongDecimal);
+        if(!choices.includes(wrongVal)) {
+            choices.push(wrongVal);
+        }
+    }
+    choices.sort(()=>Math.random()-0.5);
+    return choices;
+}
+
+function showQuestion() {
+    if(lives<=0) {
+        endGame("기회를 모두 소진하였습니다. 게임 종료!");
+        return;
+    }
+    if(!infiniteMode && usedQuestions.length>=70) {
+        infiniteMode = true;
+    }
+
+    var q = null;
+    if(!infiniteMode) {
+        q = questions[usedQuestions.length];
+        usedQuestions.push(q);
+    } else {
+        q = questions[Math.floor(Math.random()*questions.length)];
+    }
+
+    currentQuestion = q;
+    currentCorrectAnswer = q.answer;
+
+    document.getElementById('problem').innerHTML = "\\(" + q.problem + "\\)";
+    var choices = generateChoices(q.answer);
+
+    var choiceButtons = document.getElementsByClassName('choice-btn');
+    for(var i=0;i<4;i++){
+        choiceButtons[i].setAttribute('data-answer', choices[i]);
+        choiceButtons[i].innerHTML = "\\(" + choices[i] + "\\)";
+    }
+
+    MathJax.typesetPromise();
+
+    if(currentTimeLimit!==Infinity) {
+        energyTimeLeft = currentTimeLimit;
+        updateEnergyBar();
+        if(intervalEnergy) clearInterval(intervalEnergy);
+        intervalEnergy = setInterval(decrementEnergy,1000);
+    } else {
+        document.getElementById('energy-bar').style.width = '100%';
+    }
+}
+
+function decrementEnergy() {
+    if(currentTimeLimit===Infinity) return;
+    energyTimeLeft--;
+    updateEnergyBar();
+    if(energyTimeLeft<=0) {
+        clearInterval(intervalEnergy);
+        lives--;
+        updateLives();
+        showQuestion();
+    }
+}
+
+function updateEnergyBar() {
+    var percent = (energyTimeLeft/currentTimeLimit)*100;
+    document.getElementById('energy-bar').style.width = percent+'%';
+    if(percent<30) {
+        document.getElementById('energy-bar').style.background='#d9534f';
+    } else if(percent<60) {
+        document.getElementById('energy-bar').style.background='#f0ad4e';
+    } else {
+        document.getElementById('energy-bar').style.background='#76c043';
+    }
+}
+
+function chooseAnswer(e) {
+    if(solutionPopupOpen) return;
+    var selected = e.target.getAttribute('data-answer');
+    clearInterval(intervalEnergy);
+    if(selected===currentCorrectAnswer) {
+        score+=currentScorePerProblem;
+        updateScore();
+        showRandomPrize();
+        showQuestion();
+    } else {
+        lives--;
+        updateLives();
+        showSolutionPopup(currentQuestion.solution);
+        if(lives<=0) {
+            endGame("기회를 모두 소진하였습니다. 게임 종료!");
+        }
+    }
+}
+
+function showSolutionPopup(solutionText) {
+    solutionPopupOpen = true;
+    var pop=document.getElementById('popup');
+    pop.innerHTML="<h2>오답입니다.</h2><p>풀이: "+solutionText+"</p><div class='close-btn'>닫기</div>";
+    pop.style.display='block';
+    pop.querySelector('.close-btn').addEventListener('click',function(){
+        pop.style.display='none';
+        solutionPopupOpen=false;
+        showQuestion(); 
+    });
+}
+
+function updateScore() {
+    document.getElementById('score').textContent="점수: "+score;
+}
+
+function updateLives() {
+    document.getElementById('lives').textContent="남은 기회: "+lives;
+    if(lives<=0) {
+        endGame("기회를 모두 소진하였습니다.");
+    }
+}
+
+function incrementGlobalTime() {
+    globalTime++;
+    var min=Math.floor(globalTime/60);
+    var sec=globalTime%60;
+    document.getElementById('global-timer').textContent="전체 진행 시간: "+min+"분 "+sec+"초";
+}
+
+function endGame(message) {
+    clearInterval(intervalGlobal);
+    clearInterval(intervalEnergy);
+    alert(message+"\n최종 점수: "+score);
+    location.reload();
+}
+
+function selectDifficulty(diff) {
+    currentDifficulty=diff;
+    currentTimeLimit=difficultySettings[diff].time;
+    currentScorePerProblem=difficultySettings[diff].score;
+    document.getElementById('difficulty-selection').style.display='none';
+    document.getElementById('game-area').style.display='block';
+    globalTime=0;
+    intervalGlobal=setInterval(incrementGlobalTime,1000);
+    updateScore();
+    updateLives();
+    showQuestion();
+}
+
+function showRandomPrize() {
+    var r = Math.random();
+    if(r<=0.0001) {
+        alert("축하합니다! 5000원 상품권 당첨!");
+    } else if(r<=0.001) {
+        alert("축하합니다! 3000원 상품권 당첨!");
+    } else if(r<=0.002) {
+        alert("축하합니다! 1회 면제권 획득!");
+    }
+}
+
+// 전역 접근 가능하도록
+window.selectDifficulty = selectDifficulty;
+window.chooseAnswer = chooseAnswer;
+
+</script>
+</body>
+</html>
